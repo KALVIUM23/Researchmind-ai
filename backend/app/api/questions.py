@@ -1,6 +1,6 @@
 """Question & Answer API Routes"""
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from app.models.schemas import QuestionRequest, AnswerResponse
 import logging
 
@@ -9,8 +9,21 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1", tags=["qa"])
 
 
+async def get_answer_service():
+    """Dependency injection placeholder - overridden in main.py"""
+    return None
+
+
+async def get_vector_store():
+    """Dependency injection placeholder - overridden in main.py"""
+    return None
+
+
 @router.post("/ask")
-async def ask_question(request: QuestionRequest, answer_service=None):
+async def ask_question(
+    request: QuestionRequest,
+    answer_service=Depends(get_answer_service)
+):
     """
     Ask a question about documents
     
@@ -21,6 +34,12 @@ async def ask_question(request: QuestionRequest, answer_service=None):
         AnswerResponse with answer and citations
     """
     try:
+        if answer_service is None:
+            raise HTTPException(
+                status_code=503,
+                detail="Answer service not available"
+            )
+        
         if not request.question or not request.question.strip():
             raise HTTPException(status_code=400, detail="Question cannot be empty")
         
@@ -44,9 +63,8 @@ async def ask_question(request: QuestionRequest, answer_service=None):
         logger.error(f"Error answering question: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error answering question: {str(e)}")
 
-
 @router.get("/health")
-async def health_check(vector_store=None):
+async def health_check(vector_store=Depends(get_vector_store)):
     """
     Health check endpoint
     
@@ -55,6 +73,13 @@ async def health_check(vector_store=None):
     """
     try:
         from datetime import datetime
+        
+        if vector_store is None:
+            return {
+                "status": "degraded",
+                "error": "Vector store not available",
+                "timestamp": datetime.now().isoformat()
+            }
         
         # Check vector store connection
         collection_info = vector_store.get_collection_info()
@@ -73,5 +98,6 @@ async def health_check(vector_store=None):
         logger.error(f"Health check failed: {str(e)}")
         return {
             "status": "unhealthy",
-            "error": str(e)
+            "error": str(e),
+            "timestamp": datetime.now().isoformat()
         }

@@ -129,11 +129,7 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
     
-    # Dependency injection function
-    def get_services():
-        return services
-    
-    # Include routers with dependency injection
+    # Define dependency injection functions for document routes
     async def get_document_service():
         return services.get("document_service")
     
@@ -146,17 +142,12 @@ def create_app() -> FastAPI:
     async def get_answer_service():
         return services.get("answer_service")
     
-    # Add dependencies to routes
-    documents.router.dependency_overrides = {
-        "document_service": get_document_service,
-        "document_store": get_document_store,
-        "vector_store": get_vector_store,
-    }
-    
-    questions.router.dependency_overrides = {
-        "answer_service": get_answer_service,
-        "vector_store": get_vector_store,
-    }
+    # Set up dependency overrides for routers
+    # Map placeholder dependencies to actual service instances
+    app.dependency_overrides[documents.get_document_service] = get_document_service
+    app.dependency_overrides[documents.get_document_store] = get_document_store
+    app.dependency_overrides[documents.get_vector_store] = get_vector_store
+    app.dependency_overrides[questions.get_answer_service] = get_answer_service
     
     # Register routers
     app.include_router(documents.router)
