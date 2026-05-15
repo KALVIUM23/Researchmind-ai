@@ -5,7 +5,8 @@ from fastapi.middleware.cors import CORSMiddleware
 import logging
 from contextlib import asynccontextmanager
 
-from app.config import get_settings, Settings
+from app.core.config import get_settings, Settings
+from app.core.logging_config import setup_logging, get_logger
 from app.rag.ingestion import PDFIngestionService
 from app.rag.chunking import ChunkingService
 from app.rag.embeddings import EmbeddingsService
@@ -17,12 +18,9 @@ from app.services.answer_service import AnswerService
 from app.api import documents, questions
 from app.utils.logger import log_upload
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
+# Setup logging
+setup_logging()
+logger = get_logger(__name__)
 
 # Global service instances
 services = {}
@@ -36,7 +34,8 @@ async def lifespan(app: FastAPI):
     # Startup
     try:
         settings = get_settings()
-        logger.info("Initializing services...")
+        logger.info(f"Starting ResearchMind AI in {settings.environment} mode")
+        logger.info(f"Initializing services...")
         
         # Initialize core services
         ingestion_service = PDFIngestionService()
@@ -95,7 +94,12 @@ async def lifespan(app: FastAPI):
         })
         
         logger.info("All services initialized successfully")
+        logger.info(f"API running on {settings.host}:{settings.port}")
         
+    except ValueError as e:
+        logger.error(f"Configuration error: {str(e)}")
+        logger.error("Please ensure all required environment variables are set")
+        raise
     except Exception as e:
         logger.error(f"Failed to initialize services: {str(e)}")
         raise
