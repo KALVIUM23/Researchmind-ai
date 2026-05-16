@@ -1,15 +1,27 @@
 """Embeddings Service - Stage 3"""
 
 from sentence_transformers import SentenceTransformer
-from typing import List, Tuple
+from typing import List, Optional
 import logging
 import numpy as np
+
+from app.rag.embedding_cache import (
+    BatchEmbeddingProcessor,
+    MemoryEmbeddingCache,
+    DiskEmbeddingCache,
+    EmbeddingCache,
+)
+from app.rag.embedding_retry import (
+    BatchEmbeddingWithRetry,
+    RetryConfig,
+    RetryStrategy,
+)
 
 logger = logging.getLogger(__name__)
 
 
 class EmbeddingsService:
-    """Generate embeddings for text chunks"""
+    """Generate embeddings for text chunks with caching and retry logic"""
     
     def __init__(self, model_name: str = "sentence-transformers/all-MiniLM-L6-v2"):
         """
@@ -46,7 +58,7 @@ class EmbeddingsService:
     
     def embed_texts(self, texts: List[str], batch_size: int = 32) -> List[List[float]]:
         """
-        Generate embeddings for multiple texts
+        Generate embeddings for multiple texts in batches
         
         Args:
             texts: List of texts to embed
@@ -98,3 +110,114 @@ class EmbeddingsService:
     def get_embedding_dimension(self) -> int:
         """Get dimension of embeddings"""
         return self.embedding_dim
+
+
+class OptimizedEmbeddingsService(EmbeddingsService):
+    """Enhanced embeddings service with caching and retry logic"""
+    
+    def __init__(
+        self,
+        model_name: str = "sentence-transformers/all-MiniLM-L6-v2",
+        use_cache: bool = True,
+        cache_type: str = "memory",
+        use_retry: bool = True,
+        retry_config: Optional[RetryConfig] = None,
+        batch_size: int = 32,
+    ):
+        """
+        Initialize optimized embeddings service
+        
+        Args:
+            model_name: HuggingFace model name
+            use_cache: Enable embedding caching
+            cache_type: Type of cache ('memory' or 'disk')
+            use_retry: Enable retry logic
+            retry_config: Retry configuration
+            batch_size: Batch size for processing
+        """
+        super().__init__(model_name)
+        
+        self.use_cache = use_cache
+        self.use_retry = use_retry
+        self.batch_size = batch_size
+        
+        # Initialize cache
+        if use_cache:
+            if cache_type == "disk":
+                self.cache = DiskEmbeddingCache()
+            else:
+                self.cache = MemoryEmbeddingCache()
+            logger.info(f"Initialized {cache_type} embedding cache")
+        else:
+            self.cache = None
+        
+        # Initialize batch processor
+        self.batch_processor = BatchEmbeddingProcessor(
+            embedding_service=self,
+            cache=self.cache,
+            batch_size=batch_size,
+        )
+        
+        # Initialize retry logic
+        if use_retry:
+            if retry_config is None:
+                retry_config = RetryConfig(
+                    max_retries=3,
+                    base_delay=1.0,
+                    max_delay=30.0,
+                    strategy=RetryStrategy.EXPONENTIAL,
+                )
+            
+            self.batch_retry = BatchEmbeddingWithRetry(
+                embedding_service=self,
+                retry_config=retry_config,
+                batch_size=batch_size,
+            )
+            logger.info("Initialized retry logic for embeddings")
+        else:
+            self.batch_retry = None
+    
+    def embed_chunks(self, chunks: List[dict]) -> List[dict]:
+        """
+        Embed multiple chunks with optimization
+        
+        Args:
+            chunks: List of chunk dictionaries with 'text' key
+            
+        Returns:
+            List of chunks with 'embedding' field added
+        """
+        if self.use_retry and self.batch_retry:
+            logger.info("Using batch processing with retry logic")
+            return self.batch_retry.process_chunks_with_retry(chunks)
+        else:
+            logger.info("Using batch processing with cache")
+            return self.batch_processor.process_chunks(chunks)
+    
+    def get_cache_stats(self) -> dict:
+        """Get cache statistics"""
+        if self.cache and hasattr(self.cache, 'get_stats'):
+            return self.cache.get_stats()
+        return {}
+    
+    def get_batch_stats(self) -> dict:
+        """Get batch processing statistics"""
+        stats = self.batch_processor.get_stats()
+        
+        if self.batch_retry:
+            stats['retry_stats'] = self.batch_retry.get_stats()
+        
+        return stats
+    
+    def clear_cache(self) -> None:
+        """Clear cache"""
+        if self.cache:
+            self.cache.clear()
+            logger.info("Embedding cache cleared")
+    
+    def reset_stats(self) -> None:
+        """Reset all statistics"""
+        self.batch_processor.clear_cache()
+        if self.batch_retry:
+            self.batch_retry.reset_stats()
+        logger.info("All stats reset")
