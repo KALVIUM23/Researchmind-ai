@@ -2,7 +2,7 @@
 
 import pytest
 from typing import List
-from app.vectorstore.qdrant_store import VectorStoreService, VectorStoreStatistics
+from backend.app.vectorstore.qdrant_store import VectorStoreService, VectorStoreStatistics
 
 
 class TestVectorStoreStatistics:

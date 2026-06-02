@@ -3,7 +3,7 @@
 import pytest
 import json
 from fastapi.testclient import TestClient
-from app.main import app
+from backend.app.main import app
 
 client = TestClient(app)
 

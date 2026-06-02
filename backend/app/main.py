@@ -1,173 +1,140 @@
-"""FastAPI Main Application - Stage 7: Professional API Design"""
+"""
+ResearchMind AI - Production Backend
+Main FastAPI application with proper service lifecycle management
+"""
 
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-import logging
+from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
+import logging
 
-from app.core.config import get_settings, Settings
-from app.core.logging_config import setup_logging, get_logger
-from app.rag.ingestion import PDFIngestionService
-from app.rag.chunking import ChunkingService
-from app.rag.embeddings import EmbeddingsService
-from app.rag.retrieval import RetrievalService
-from app.rag.answer_generation import AnswerGenerationService
-from app.vectorstore.qdrant_store import VectorStoreService
-from app.services.document_service import DocumentService, DocumentStore
-from app.services.answer_service import AnswerService
-from app.api import documents, questions
-from app.utils.logger import log_upload
+from backend.app.core.config import get_settings
+from backend.app.core.logging_config import setup_logging
 
-# Setup logging
+# Setup logging first
 setup_logging()
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
-# Global service instances
-services = {}
+# Global service container
+class Services:
+    """Holds all initialized services"""
+    pass
+
+services = Services()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """
-    Lifecycle context manager for app startup/shutdown
-    """
-    # Startup
+    """Manage app lifecycle: startup and shutdown"""
+    
+    # ===== STARTUP =====
+    logger.info("🚀 ResearchMind AI Starting...")
     try:
         settings = get_settings()
-        logger.info(f"Starting ResearchMind AI in {settings.environment} mode")
-        logger.info(f"Initializing services...")
+        logger.info(f"Environment: {settings.environment}")
         
-        # Initialize core services
-        ingestion_service = PDFIngestionService()
+        # Import services here to avoid circular imports at startup
+        from backend.app.rag.ingestion import PDFIngestionService
+        from backend.app.rag.chunking import ChunkingService
+        from backend.app.rag.embeddings import EmbeddingsService
+        from backend.app.rag.retrieval import RetrievalService
+        from backend.app.rag.answer_generation import AnswerGenerationService
+        from backend.app.vectorstore.qdrant_store import VectorStoreService
         
-        chunking_service = ChunkingService(
+        # Initialize services in order
+        logger.info("Initializing RAG pipeline...")
+        services.pdf_ingestion = PDFIngestionService()
+        services.chunking = ChunkingService(
             chunk_size=settings.chunk_size,
             chunk_overlap=settings.chunk_overlap
         )
-        
-        embeddings_service = EmbeddingsService(
-            model_name=settings.embedding_model
-        )
-        
-        vector_store = VectorStoreService(
+        services.embeddings = EmbeddingsService(model_name=settings.embedding_model)
+        services.vector_store = VectorStoreService(
             url=settings.qdrant_url,
             api_key=settings.qdrant_api_key,
-            collection_name=settings.qdrant_collection_name,
-            embedding_dim=embeddings_service.get_embedding_dimension()
+            collection_name=settings.qdrant_collection_name
         )
-        
-        retrieval_service = RetrievalService(
-            embeddings_service=embeddings_service,
-            vector_store=vector_store
+        services.retrieval = RetrievalService(
+            vector_store=services.vector_store,
+            embeddings=services.embeddings,
+            top_k=settings.retrieval_top_k
         )
-        
-        answer_generation_service = AnswerGenerationService(
+        services.answer_generation = AnswerGenerationService(
+            model_name=settings.gemini_model,
             api_key=settings.gemini_api_key
         )
         
-        document_store = DocumentStore()
+        logger.info("✅ All services initialized")
         
-        document_service = DocumentService(
-            ingestion_service=ingestion_service,
-            chunking_service=chunking_service,
-            embeddings_service=embeddings_service,
-            vector_store=vector_store,
-            document_store=document_store
-        )
-        
-        answer_service = AnswerService(
-            retrieval_service=retrieval_service,
-            answer_generation_service=answer_generation_service
-        )
-        
-        # Store services in global dict
-        services.update({
-            "ingestion": ingestion_service,
-            "chunking": chunking_service,
-            "embeddings": embeddings_service,
-            "vector_store": vector_store,
-            "retrieval": retrieval_service,
-            "answer_generation": answer_generation_service,
-            "document_store": document_store,
-            "document_service": document_service,
-            "answer_service": answer_service,
-        })
-        
-        logger.info("All services initialized successfully")
-        logger.info(f"API running on {settings.host}:{settings.port}")
-        
-    except ValueError as e:
-        logger.error(f"Configuration error: {str(e)}")
-        logger.error("Please ensure all required environment variables are set")
-        raise
     except Exception as e:
-        logger.error(f"Failed to initialize services: {str(e)}")
+        logger.error(f"❌ Startup failed: {str(e)}", exc_info=True)
         raise
     
     yield
     
-    # Shutdown
-    logger.info("Shutting down application...")
+    # ===== SHUTDOWN =====
+    logger.info("🛑 ResearchMind AI Shutting down...")
 
 
 def create_app() -> FastAPI:
     """Create and configure FastAPI application"""
     
+    settings = get_settings()
+    
     app = FastAPI(
-        title="ResearchMind AI - Document Intelligence Pipeline",
-        description="Production-grade RAG backend for document analysis",
+        title="ResearchMind AI",
+        description="AI-powered research with semantic search and LLM reasoning",
         version="1.0.0",
         lifespan=lifespan
     )
     
-    # Add CORS middleware
+    # ===== CORS Configuration =====
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=["*"] if settings.debug else ["http://localhost:3000", "http://localhost:5173"],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
     )
     
-    # Define dependency injection functions for document routes
-    async def get_document_service():
-        return services.get("document_service")
+    # ===== Health Check =====
+    @app.get("/health")
+    async def health_check():
+        """API health check endpoint"""
+        return {"status": "healthy", "service": "ResearchMind AI"}
     
-    async def get_document_store():
-        return services.get("document_store")
-    
-    async def get_vector_store():
-        return services.get("vector_store")
-    
-    async def get_answer_service():
-        return services.get("answer_service")
-    
-    # Set up dependency overrides for routers
-    # Map placeholder dependencies to actual service instances
-    app.dependency_overrides[documents.get_document_service] = get_document_service
-    app.dependency_overrides[documents.get_document_store] = get_document_store
-    app.dependency_overrides[documents.get_vector_store] = get_vector_store
-    app.dependency_overrides[questions.get_answer_service] = get_answer_service
-    
-    # Register routers
-    app.include_router(documents.router)
-    app.include_router(questions.router)
-    
-    # Root endpoint
+    # ===== Root Endpoint =====
     @app.get("/")
     async def root():
+        """API information endpoint"""
         return {
             "name": "ResearchMind AI",
             "version": "1.0.0",
-            "description": "Document Intelligence Pipeline with RAG",
+            "status": "running",
+            "docs": "/docs",
             "endpoints": {
-                "docs": "/docs",
-                "upload": "/api/v1/upload",
-                "ask": "/api/v1/ask",
+                "health": "/health",
+                "upload": "/api/v1/documents/upload",
+                "ask": "/api/v1/questions/ask",
                 "documents": "/api/v1/documents",
-                "health": "/api/v1/health"
             }
         }
+    
+    # ===== API Routes (v1) =====
+    from backend.app.api import documents_api, questions_api
+    
+    app.include_router(documents_api.router, prefix="/api/v1", tags=["documents"])
+    app.include_router(questions_api.router, prefix="/api/v1", tags=["questions"])
+    
+    # ===== Global Error Handler =====
+    @app.exception_handler(Exception)
+    async def global_exception_handler(request, exc):
+        logger.error(f"Unhandled exception: {type(exc).__name__}: {str(exc)}", exc_info=True)
+        return JSONResponse(
+            status_code=500,
+            content={"error": "Internal server error", "detail": str(exc) if settings.debug else "Unknown error"}
+        )
     
     return app
 
@@ -179,8 +146,9 @@ if __name__ == "__main__":
     import uvicorn
     settings = get_settings()
     uvicorn.run(
-        "app.main:app",
+        "backend.app.main:app",
         host=settings.host,
         port=settings.port,
-        reload=settings.debug
+        reload=settings.debug,
+        log_level="info"
     )
