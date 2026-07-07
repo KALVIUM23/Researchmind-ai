@@ -39,8 +39,10 @@ async def upload_document(background_tasks: BackgroundTasks, file: UploadFile = 
             raise HTTPException(status_code=400, detail="Only PDF files are supported")
         
         document_id = str(uuid.uuid4())
-        file_location = f"backend/uploads/{document_id}.pdf"
-        os.makedirs(os.path.dirname(file_location), exist_ok=True)
+        BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        UPLOAD_DIR = os.path.join(BASE_DIR, "uploads")
+        file_location = os.path.join(UPLOAD_DIR, f"{document_id}.pdf")
+        os.makedirs(UPLOAD_DIR, exist_ok=True)
         
         # Save file locally first
         with open(file_location, "wb+") as file_object:
