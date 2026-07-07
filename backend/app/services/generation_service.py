@@ -1,4 +1,4 @@
-"""Answer Generation Service - Phase 7 (Grounded LLM Responses with Citations)"""
+﻿"""Answer Generation Service - Phase 7 (Grounded LLM Responses with Citations)"""
 
 import google.generativeai as genai
 from typing import List, Dict, Any, Tuple, Optional
@@ -18,7 +18,7 @@ class ResponseFormat(Enum):
     BULLET_POINTS = "bullet_points"
 
 
-class AnswerGenerationMetrics:
+class GenerationMetrics:
     """Track answer generation performance"""
     def __init__(self):
         self.total_answers = 0
@@ -37,7 +37,7 @@ class AnswerGenerationMetrics:
         }
 
 
-class AnswerGenerationService:
+class GenerationService:
     """Generate grounded answers using Gemini with advanced features"""
     
     # Grounding prompt templates
@@ -55,7 +55,7 @@ You may supplement with relevant general knowledge when appropriate.
 Always indicate which information comes from the provided documents."""
     }
     
-    def __init__(self, api_key: str, model_name: str = "gemini-pro", grounding_level: str = "strict"):
+    def __init__(self, api_key: str, model_name: str = "gemini-flash-latest", grounding_level: str = "strict"):
         """
         Initialize answer generation service
         
@@ -69,8 +69,8 @@ Always indicate which information comes from the provided documents."""
             self.model = genai.GenerativeModel(model_name)
             self.model_name = model_name
             self.grounding_level = grounding_level
-            self.metrics = AnswerGenerationMetrics()
-            logger.info(f"✅ Initialized Gemini model: {model_name}, grounding: {grounding_level}")
+            self.metrics = GenerationMetrics()
+            logger.info(f"[OK] Initialized Gemini model: {model_name}, grounding: {grounding_level}")
         except Exception as e:
             logger.error(f"Error initializing Gemini: {str(e)}")
             raise
@@ -113,13 +113,30 @@ Always indicate which information comes from the provided documents."""
             self.metrics.total_answers += 1
             self.metrics.generation_times.append(generation_time)
             
-            logger.info(f"✅ Generated answer ({len(answer)} chars, {generation_time:.1f}ms)")
+            logger.info(f"[OK] Generated answer ({len(answer)} chars, {generation_time:.1f}ms)")
             return answer
             
         except Exception as e:
             logger.error(f"Error generating answer: {str(e)}")
             self.metrics.failed_generations += 1
             raise
+            
+    async def generate_streaming(self, query: str, context: List[Dict[str, Any]]):
+        """Generate answer with streaming output"""
+        context_prompt = "Context:\n"
+        for chunk in context:
+            context_prompt += f"[Source: {chunk['metadata'].get('source', 'Unknown')}, Page: {chunk['metadata'].get('page', 'Unknown')}]\n{chunk.get('text', '')}\n\n"
+        
+        grounded_prompt = f"{self.GROUNDING_PROMPTS[self.grounding_level]}\n\n{context_prompt}\nQuestion: {query}"
+        
+        response = self.model.generate_content(
+            grounded_prompt,
+            stream=True
+        )
+        
+        for chunk in response:
+            yield chunk.text
+
     
     def extract_citations(
         self, 
@@ -163,7 +180,7 @@ Always indicate which information comes from the provided documents."""
                 seen.add(key)
         
         self.metrics.citations_per_answer += len(citations)
-        logger.info(f"✅ Extracted {len(citations)} unique citations")
+        logger.info(f"[OK] Extracted {len(citations)} unique citations")
         return citations
     
     def calculate_confidence(
@@ -408,5 +425,5 @@ Always indicate which information comes from the provided documents."""
     
     def reset_metrics(self):
         """Reset metrics for fresh tracking"""
-        self.metrics = AnswerGenerationMetrics()
+        self.metrics = GenerationMetrics()
 

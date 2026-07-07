@@ -2,7 +2,7 @@
 
 from typing import List, Dict, Any, Optional, Tuple
 from enum import Enum
-from backend.app.rag.embeddings import EmbeddingsService
+from backend.app.retrieval.embeddings import EmbeddingsService
 from backend.app.vectorstore.qdrant_store import VectorStoreService
 import logging
 from datetime import datetime
@@ -123,7 +123,7 @@ class RetrievalService:
             self.metrics.processing_times.append(processing_time)
             
             logger.info(
-                f"✅ Retrieved {len(ranked_chunks)} chunks for question (strategy: {ranking_strategy.value}, "
+                f"[OK] Retrieved {len(ranked_chunks)} chunks for question (strategy: {ranking_strategy.value}, "
                 f"time: {processing_time:.1f}ms)"
             )
             return ranked_chunks[:top_k]
@@ -150,7 +150,7 @@ class RetrievalService:
             else:
                 self.metrics.deduplication_removals += 1
         
-        logger.info(f"Deduplication: {len(chunks)} → {len(unique_chunks)} chunks")
+        logger.info(f"Deduplication: {len(chunks)} -> {len(unique_chunks)} chunks")
         return unique_chunks
     
     def _rank_chunks(

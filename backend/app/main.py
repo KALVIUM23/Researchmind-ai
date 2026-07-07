@@ -1,4 +1,4 @@
-"""
+﻿"""
 ResearchMind AI - Production Backend
 Main FastAPI application with proper service lifecycle management
 """
@@ -11,6 +11,7 @@ import logging
 
 from backend.app.core.config import get_settings
 from backend.app.core.logging_config import setup_logging
+from backend.app.middleware.cors import setup_cors
 
 # Setup logging first
 setup_logging()
@@ -35,16 +36,19 @@ async def lifespan(app: FastAPI):
         logger.info(f"Environment: {settings.environment}")
         
         # Import services here to avoid circular imports at startup
-        from backend.app.rag.ingestion import PDFIngestionService
-        from backend.app.rag.chunking import ChunkingService
-        from backend.app.rag.embeddings import EmbeddingsService
-        from backend.app.rag.retrieval import RetrievalService
-        from backend.app.rag.answer_generation import AnswerGenerationService
+        from backend.app.services.parser_service import ParserService
+        from backend.app.ingestion.chunking import ChunkingService
+        from backend.app.retrieval.embeddings import EmbeddingsService
+        from backend.app.retrieval.retrieval import RetrievalService
+        from backend.app.services.generation_service import GenerationService
+        from backend.app.services.citation_service import CitationService
+        from backend.app.services.health_service import HealthService
         from backend.app.vectorstore.qdrant_store import VectorStoreService
         
         # Initialize services in order
-        logger.info("Initializing RAG pipeline...")
-        services.pdf_ingestion = PDFIngestionService()
+        logger.info("Initializing services pipeline...")
+        services.health = HealthService()
+        services.parser = ParserService()
         services.chunking = ChunkingService(
             chunk_size=settings.chunk_size,
             chunk_overlap=settings.chunk_overlap
@@ -53,19 +57,20 @@ async def lifespan(app: FastAPI):
         services.vector_store = VectorStoreService(
             url=settings.qdrant_url,
             api_key=settings.qdrant_api_key,
-            collection_name=settings.qdrant_collection_name
+            collection_name=settings.qdrant_collection_name,
+            embedding_dim=settings.embedding_dimension
         )
         services.retrieval = RetrievalService(
             vector_store=services.vector_store,
-            embeddings=services.embeddings,
-            top_k=settings.retrieval_top_k
+            embeddings_service=services.embeddings
         )
-        services.answer_generation = AnswerGenerationService(
+        services.generation = GenerationService(
             model_name=settings.gemini_model,
             api_key=settings.gemini_api_key
         )
+        services.citation = CitationService()
         
-        logger.info("✅ All services initialized")
+        logger.info("[OK] All services initialized")
         
     except Exception as e:
         logger.error(f"❌ Startup failed: {str(e)}", exc_info=True)
@@ -90,19 +95,13 @@ def create_app() -> FastAPI:
     )
     
     # ===== CORS Configuration =====
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=["*"] if settings.debug else ["http://localhost:3000", "http://localhost:5173"],
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
+    setup_cors(app)
     
     # ===== Health Check =====
     @app.get("/health")
     async def health_check():
         """API health check endpoint"""
-        return {"status": "healthy", "service": "ResearchMind AI"}
+        return services.health.get_health_status()
     
     # ===== Root Endpoint =====
     @app.get("/")

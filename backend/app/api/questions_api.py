@@ -1,69 +1,48 @@
 """
 Questions API Routes
-Handle document Q&A with streaming support (like Perplexity)
+Handle document Q&A with streaming support
 """
 
 from fastapi import APIRouter, HTTPException, BackgroundTasks
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
 import logging
 import json
+import time
+
+from backend.app.schemas.question import QuestionRequest, QuestionResponse
 
 router = APIRouter(prefix="/questions", tags=["questions"])
 logger = logging.getLogger(__name__)
-
-
-class QuestionRequest(BaseModel):
-    """User question about documents"""
-    query: str
-    document_id: str = None  # Optional: filter to specific document
-    top_k: int = 5
-
-
-class QuestionResponse(BaseModel):
-    """Response with streaming support"""
-    query: str
-    answer: str
-    sources: list = []
-    status: str
-
 
 @router.post("/ask", response_class=StreamingResponse)
 async def ask_question(request: QuestionRequest):
     """
     Ask a question about uploaded documents with streaming response
-    
-    Mimics Perplexity/Google Studio streaming pattern:
-    1. Retrieve relevant chunks from vector DB
-    2. Stream answer generation in real-time
-    
-    Args:
-        request: Question query and filters
-        
-    Returns:
-        Server-Sent Events stream of answer chunks
     """
+    start_time = time.time()
     try:
         from backend.app.main import services
         
         logger.info(f"Processing question: {request.query[:50]}...")
         
-        # Retrieve relevant chunks
-        chunks = await services.retrieval.retrieve(
-            query=request.query,
+        # 1. Retrieve relevant chunks
+        retrieval_start = time.time()
+        chunks = services.retrieval.retrieve_context(
+            question=request.query,
             top_k=request.top_k,
             document_id=request.document_id
         )
+        retrieval_latency = time.time() - retrieval_start
+        logger.info(f"Retrieval latency: {retrieval_latency:.2f}s")
         
         if not chunks:
             raise HTTPException(status_code=404, detail="No relevant documents found")
         
-        # Generate streaming response
+        # 2. Generate streaming response
         async def response_generator():
-            """Stream answer tokens as they're generated"""
+            llm_start = time.time()
             try:
-                # Get streaming response from LLM
-                stream = services.answer_generation.generate_streaming(
+                stream = services.generation.generate_streaming(
                     query=request.query,
                     context=chunks
                 )
@@ -71,15 +50,22 @@ async def ask_question(request: QuestionRequest):
                 answer_text = ""
                 async for chunk in stream:
                     answer_text += chunk
-                    # Yield as JSON events
                     yield json.dumps({"type": "token", "data": chunk}) + "\n"
                 
+                llm_latency = time.time() - llm_start
+                logger.info(f"LLM latency: {llm_latency:.2f}s")
+                
                 # Yield sources
-                sources = [{"id": c.metadata.get("document_id"), "text": c.page_content[:100]} for c in chunks]
+                sources = []
+                for c in chunks:
+                    sources.append({
+                        "id": c["metadata"].get("document_id"), 
+                        "text": c["text"][:100],
+                        "source": c["metadata"].get("source"),
+                        "page": c["metadata"].get("page")
+                    })
                 yield json.dumps({"type": "sources", "data": sources}) + "\n"
                 yield json.dumps({"type": "done"}) + "\n"
-                
-                logger.info(f"✅ Answer generated ({len(answer_text)} chars)")
                 
             except Exception as e:
                 logger.error(f"Stream error: {str(e)}", exc_info=True)
@@ -102,39 +88,42 @@ async def ask_question(request: QuestionRequest):
         raise HTTPException(status_code=500, detail=f"Question processing failed: {str(e)}")
 
 
-@router.post("/ask/simple")
+@router.post("/ask/simple", response_model=QuestionResponse)
 async def ask_question_simple(request: QuestionRequest):
     """
     Simple (non-streaming) version of ask endpoint
-    Returns complete answer at once
     """
+    start_time = time.time()
     try:
         from backend.app.main import services
         
         logger.info(f"Processing question (simple): {request.query[:50]}...")
         
-        # Retrieve
-        chunks = await services.retrieval.retrieve(
-            query=request.query,
+        retrieval_start = time.time()
+        chunks = services.retrieval.retrieve_context(
+            question=request.query,
             top_k=request.top_k,
             document_id=request.document_id
         )
+        retrieval_latency = time.time() - retrieval_start
+        logger.info(f"Retrieval latency: {retrieval_latency:.2f}s")
         
         if not chunks:
             raise HTTPException(status_code=404, detail="No relevant documents found")
+            
+        context_prompt = "Context:\n"
+        for chunk in chunks:
+            context_prompt += f"[Source: {chunk.metadata.get('source', 'Unknown')}, Page: {chunk.metadata.get('page', 'Unknown')}]\n{chunk.page_content}\n\n"
         
-        # Generate answer
-        answer = await services.answer_generation.generate(
-            query=request.query,
-            context=chunks
-        )
-        
-        sources = [{"document_id": c.metadata.get("document_id"), "excerpt": c.page_content[:200]} for c in chunks]
+        llm_start = time.time()
+        answer, citations, confidence = services.generation.generate_grounded_answer(request.query, context_prompt, chunks)
+        llm_latency = time.time() - llm_start
+        logger.info(f"LLM latency: {llm_latency:.2f}s")
         
         return {
             "query": request.query,
             "answer": answer,
-            "sources": sources,
+            "sources": citations,
             "status": "success"
         }
     

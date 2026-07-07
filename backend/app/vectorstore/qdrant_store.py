@@ -1,4 +1,4 @@
-"""Vector Store Service - Phase 5 (Advanced Qdrant Integration)"""
+﻿"""Vector Store Service - Phase 5 (Advanced Qdrant Integration)"""
 
 from qdrant_client import QdrantClient
 from qdrant_client.models import (
@@ -46,7 +46,10 @@ class VectorStoreService:
             embedding_dim: Embedding dimension (e.g., 384 for all-MiniLM-L6-v2)
         """
         try:
-            self.client = QdrantClient(url=url, api_key=api_key if api_key else None)
+            if url == ":memory:":
+                self.client = QdrantClient(location=":memory:")
+            else:
+                self.client = QdrantClient(url=url, api_key=api_key if api_key else None)
             self.collection_name = collection_name
             self.embedding_dim = embedding_dim
             self.stats = VectorStoreStatistics()
@@ -83,7 +86,7 @@ class VectorStoreService:
                         }
                     },
                 )
-                logger.info(f"✅ Collection '{self.collection_name}' created successfully")
+                logger.info(f"[OK] Collection '{self.collection_name}' created successfully")
         except Exception as e:
             logger.error(f"Error ensuring collection exists: {str(e)}")
             raise
@@ -142,7 +145,7 @@ class VectorStoreService:
             
             self.stats.total_insertions += len(points)
             self.stats.total_vectors_stored += len(points)
-            logger.info(f"✅ Added {len(points)} chunks to vector store")
+            logger.info(f"[OK] Added {len(points)} chunks to vector store")
             return point_ids
             
         except Exception as e:
@@ -180,7 +183,7 @@ class VectorStoreService:
                 
                 self.stats.batch_operations += 1
             
-            logger.info(f"✅ Batch insertion complete: {len(all_point_ids)} total vectors stored")
+            logger.info(f"[OK] Batch insertion complete: {len(all_point_ids)} total vectors stored")
             return all_point_ids
             
         except Exception as e:
@@ -205,14 +208,15 @@ class VectorStoreService:
             List of retrieved chunks with scores and metadata
         """
         try:
-            results = self.client.search(
+            response = self.client.query_points(
                 collection_name=self.collection_name,
-                query_vector=query_embedding,
+                query=query_embedding,
                 limit=top_k,
                 score_threshold=score_threshold,
                 with_payload=True,
                 with_vectors=False,  # Don't retrieve vectors to save bandwidth
             )
+            results = response.points
             
             retrieved = []
             for result in results:
@@ -233,7 +237,7 @@ class VectorStoreService:
             
             self.stats.total_searches += 1
             top_score = results[0].score if results else 0.0
-            logger.info(f"✅ Retrieved {len(retrieved)} chunks, top score: {top_score:.3f}")
+            logger.info(f"[OK] Retrieved {len(retrieved)} chunks, top score: {top_score:.3f}")
             return retrieved
             
         except Exception as e:
@@ -273,15 +277,16 @@ class VectorStoreService:
             
             filter_obj = Filter(must=conditions) if conditions else None
             
-            results = self.client.search(
+            response = self.client.query_points(
                 collection_name=self.collection_name,
-                query_vector=query_embedding,
+                query=query_embedding,
                 query_filter=filter_obj,
                 limit=top_k,
                 score_threshold=score_threshold,
                 with_payload=True,
                 with_vectors=False,
             )
+            results = response.points
             
             retrieved = []
             for result in results:
@@ -298,7 +303,7 @@ class VectorStoreService:
                     }
                 })
             
-            logger.info(f"✅ Retrieved {len(retrieved)} filtered chunks, filters: {filters}")
+            logger.info(f"[OK] Retrieved {len(retrieved)} filtered chunks, filters: {filters}")
             return retrieved
             
         except Exception as e:
@@ -324,7 +329,7 @@ class VectorStoreService:
                 )
             )
             self.stats.total_deletions += 1
-            logger.info(f"✅ Deleted chunks for document: {document_id}")
+            logger.info(f"[OK] Deleted chunks for document: {document_id}")
             return 1  # Return count of operation (Qdrant API)
         except Exception as e:
             logger.error(f"Error deleting chunks by document: {str(e)}")
@@ -357,7 +362,7 @@ class VectorStoreService:
                 points_selector=filter_obj
             )
             self.stats.total_deletions += 1
-            logger.info(f"✅ Deleted chunks matching filters: {metadata_filter}")
+            logger.info(f"[OK] Deleted chunks matching filters: {metadata_filter}")
             return 1
         except Exception as e:
             logger.error(f"Error deleting chunks by metadata: {str(e)}")
@@ -390,7 +395,7 @@ class VectorStoreService:
             )
             
             self.stats.total_insertions += len(point_objects)
-            logger.info(f"✅ Upserted {len(point_objects)} points")
+            logger.info(f"[OK] Upserted {len(point_objects)} points")
             return [str(p.id) for p in point_objects]
             
         except Exception as e:
@@ -471,7 +476,7 @@ class VectorStoreService:
             
             # Reset statistics
             self.stats = VectorStoreStatistics()
-            logger.info("✅ Collection recreated empty")
+            logger.info("[OK] Collection recreated empty")
             return True
         except Exception as e:
             logger.error(f"Error clearing collection: {str(e)}")

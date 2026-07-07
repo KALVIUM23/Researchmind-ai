@@ -1,4 +1,4 @@
-"""Phase 9: Frontend Ready Configuration and CORS Setup"""
+﻿"""Phase 9: Frontend Ready Configuration and CORS Setup"""
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -42,13 +42,13 @@ def setup_cors(app: FastAPI, settings):
         max_age=3600,
     )
     
-    logger.info(f"✅ CORS configured for origins: {origins}")
+    logger.info(f"[OK] CORS configured for origins: {origins}")
 
 
 def setup_compression(app: FastAPI):
     """Setup GZIP compression for responses"""
     app.add_middleware(GZIPMiddleware, minimum_size=1000)
-    logger.info("✅ GZIP compression enabled")
+    logger.info("[OK] GZIP compression enabled")
 
 
 def setup_error_handlers(app: FastAPI):
@@ -68,7 +68,7 @@ def setup_error_handlers(app: FastAPI):
             "detail": "An unexpected error occurred"
         }
     
-    logger.info("✅ Custom error handlers configured")
+    logger.info("[OK] Custom error handlers configured")
 
 
 def setup_api_documentation(app: FastAPI, settings):
@@ -90,7 +90,7 @@ def setup_api_documentation(app: FastAPI, settings):
         },
     ]
     
-    logger.info("✅ API documentation configured")
+    logger.info("[OK] API documentation configured")
     logger.info(f"   📚 Swagger UI: http://localhost:{settings.port}/docs")
     logger.info(f"   📚 ReDoc: http://localhost:{settings.port}/redoc")
 

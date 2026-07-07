@@ -1,6 +1,6 @@
 """Unit tests for embeddings service"""
 
-from backend.app.rag.embeddings import EmbeddingsService
+from backend.app.retrieval.embeddings import EmbeddingsService
 
 
 def test_embeddings_service_initialization():

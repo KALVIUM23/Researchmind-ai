@@ -1,6 +1,6 @@
 """Unit tests for chunking service"""
 
-from backend.app.rag.chunking import ChunkingService
+from backend.app.ingestion.chunking import ChunkingService
 
 
 def test_chunking_service_initialization():

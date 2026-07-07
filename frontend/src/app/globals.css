@@ -1,0 +1,157 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-sans);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+}
+
+:root {
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --radius: 0.25rem;
+}
+
+.dark {
+  --background: #111316;
+  --foreground: #e2e2e6;
+  --primary: #ffffff;
+  --primary-foreground: #111316;
+  --secondary: #c7c6c7;
+  --secondary-foreground: #303032;
+  --muted: #1e2023;
+  --muted-foreground: #8e9192;
+  --accent: #ffffff;
+  --accent-foreground: #111316;
+  --border: #232629;
+  --input: #1a1c1f;
+  --ring: #ffffff;
+}
+
+/* Custom Font Utilities mapped to next/font/google classes */
+.font-libre {
+  font-family: var(--font-libre-caslon-text), serif;
+}
+
+.font-garamond {
+  font-family: var(--font-eb-garamond), serif;
+}
+
+.font-hanken {
+  font-family: var(--font-hanken-grotesk), sans-serif;
+}
+
+.font-jetbrains {
+  font-family: var(--font-jetbrains-mono), monospace;
+}
+
+.font-geist {
+  font-family: var(--font-geist-sans), sans-serif;
+}
+
+/* Ink & Logic Brutalist Styles */
+.grid-bg-brutalist {
+  background-image: 
+    linear-gradient(to right, rgba(35, 38, 41, 0.4) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(35, 38, 41, 0.4) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+.crt-overlay {
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+  background-size: 100% 4px, 6px 100%;
+  pointer-events: none;
+  z-index: 100;
+}
+
+.input-bracket {
+  border-left: 2px solid #ffffff;
+  border-right: 2px solid #ffffff;
+  border-top: none;
+  border-bottom: 2px solid #232629;
+  background: transparent;
+}
+.input-bracket:focus {
+  outline: none;
+  border-bottom-color: #ffffff;
+  box-shadow: inset 0 -1px 0 #ffffff;
+}
+
+/* Obsidian Intelligence Styles */
+.glass-panel {
+  background: rgba(17, 17, 17, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid #1F1F1F;
+}
+
+.pulse-line {
+  height: 1px;
+  width: 100%;
+  background: linear-gradient(90deg, transparent, #4edea3, transparent);
+  background-size: 200% 100%;
+  animation: pulse-move 2.5s linear infinite;
+}
+
+@keyframes pulse-move {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.agent-glow {
+  box-shadow: 0 0 20px -5px rgba(78, 222, 163, 0.15);
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #464554;
+  border-radius: 10px;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}

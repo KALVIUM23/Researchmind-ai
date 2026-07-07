@@ -1,4 +1,4 @@
-"""Phase 8: API Layer Finalization with Complete Endpoints"""
+﻿"""Phase 8: API Layer Finalization with Complete Endpoints"""
 
 from fastapi import APIRouter, UploadFile, File, Query, HTTPException, Depends
 from pydantic import BaseModel, Field
@@ -110,7 +110,7 @@ def create_query_router(
                 max_length=2000
             )
             
-            logger.info(f"✅ Answer generated for question: {request.question[:50]}...")
+            logger.info(f"[OK] Answer generated for question: {request.question[:50]}...")
             
             return QueryResponse(**result)
             
@@ -128,7 +128,7 @@ def create_query_router(
         """List all uploaded documents with metadata"""
         try:
             documents = document_service.list_documents()
-            logger.info(f"✅ Retrieved {len(documents)} documents")
+            logger.info(f"[OK] Retrieved {len(documents)} documents")
             return documents
         except Exception as e:
             logger.error(f"Error listing documents: {str(e)}")
@@ -144,7 +144,7 @@ def create_query_router(
         """Delete document and remove from vector store"""
         try:
             result = document_service.delete_document(document_id)
-            logger.info(f"✅ Deleted document: {document_id}")
+            logger.info(f"[OK] Deleted document: {document_id}")
             return DocumentDeleteResponse(**result)
         except Exception as e:
             logger.error(f"Error deleting document: {str(e)}")
@@ -173,7 +173,7 @@ def create_query_router(
                 }
             }
             
-            logger.info("✅ Health check passed")
+            logger.info("[OK] Health check passed")
             return health_status
             
         except Exception as e:
@@ -195,7 +195,7 @@ def create_query_router(
                 "unique_documents": 0,
                 "unique_users": 0,
             }
-            logger.info("✅ Retrieved analytics")
+            logger.info("[OK] Retrieved analytics")
             return stats
         except Exception as e:
             logger.error(f"Error getting analytics: {str(e)}")

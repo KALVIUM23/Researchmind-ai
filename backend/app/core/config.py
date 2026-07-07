@@ -33,10 +33,10 @@ class Settings(BaseSettings):
     
     # Gemini API
     gemini_api_key: str = ""
-    gemini_model: str = "gemini-pro"
+    gemini_model: str = "gemini-flash-latest"
     
     # Qdrant Vector Database
-    qdrant_url: str = "http://localhost:6333"
+    qdrant_url: str = ":memory:"
     qdrant_api_key: str = ""
     qdrant_collection_name: str = "researchmind"
     
