@@ -1,4 +1,4 @@
-﻿"""
+"""
 ResearchMind AI - Production Backend
 Main FastAPI application with proper service lifecycle management
 """
@@ -53,7 +53,10 @@ async def lifespan(app: FastAPI):
             chunk_size=settings.chunk_size,
             chunk_overlap=settings.chunk_overlap
         )
-        services.embeddings = EmbeddingsService(model_name=settings.embedding_model)
+        services.embeddings = EmbeddingsService(
+            model_name=settings.embedding_model,
+            api_key=settings.gemini_api_key
+        )
         services.vector_store = VectorStoreService(
             url=settings.qdrant_url,
             api_key=settings.qdrant_api_key,

@@ -1,9 +1,10 @@
 """Embeddings Service - Stage 3"""
 
-from sentence_transformers import SentenceTransformer
+import google.generativeai as genai
 from typing import List, Optional
 import logging
 import numpy as np
+import os
 
 from backend.app.retrieval.embedding_cache import (
     BatchEmbeddingProcessor,
@@ -21,22 +22,31 @@ logger = logging.getLogger(__name__)
 
 
 class EmbeddingsService:
-    """Generate embeddings for text chunks with caching and retry logic"""
+    """Generate embeddings for text chunks using Google Gemini API"""
     
-    def __init__(self, model_name: str = "sentence-transformers/all-MiniLM-L6-v2"):
+    def __init__(self, model_name: str = "models/embedding-001", api_key: str = None):
         """
         Initialize embeddings service
         
         Args:
-            model_name: HuggingFace model name for embeddings
+            model_name: Gemini model name for embeddings
+            api_key: Gemini API key
         """
         try:
-            logger.info(f"Loading embedding model: {model_name}")
-            self.model = SentenceTransformer(model_name)
-            self.embedding_dim = self.model.get_sentence_embedding_dimension()
+            logger.info(f"Loading Gemini embedding model: {model_name}")
+            self.model_name = model_name
+            self.embedding_dim = 768  # models/embedding-001 has 768 dimensions
+            
+            if api_key:
+                genai.configure(api_key=api_key)
+            elif "GEMINI_API_KEY" in os.environ:
+                genai.configure(api_key=os.environ["GEMINI_API_KEY"])
+            else:
+                logger.warning("No Gemini API key provided for embeddings")
+                
             logger.info(f"Embedding dimension: {self.embedding_dim}")
         except Exception as e:
-            logger.error(f"Error loading embedding model: {str(e)}")
+            logger.error(f"Error initializing embedding service: {str(e)}")
             raise
     
     def embed_text(self, text: str) -> List[float]:
@@ -50,8 +60,12 @@ class EmbeddingsService:
             Embedding vector as list
         """
         try:
-            embedding = self.model.encode(text, convert_to_tensor=False)
-            return embedding.tolist()
+            result = genai.embed_content(
+                model=self.model_name,
+                content=text,
+                task_type="retrieval_document"
+            )
+            return result['embedding']
         except Exception as e:
             logger.error(f"Error embedding text: {str(e)}")
             raise
@@ -62,19 +76,19 @@ class EmbeddingsService:
         
         Args:
             texts: List of texts to embed
-            batch_size: Batch size for processing
+            batch_size: Batch size (not strictly enforced since API handles batches natively)
             
         Returns:
             List of embedding vectors
         """
         try:
-            embeddings = self.model.encode(
-                texts,
-                batch_size=batch_size,
-                convert_to_tensor=False,
-                show_progress_bar=True
+            # The Gemini API handles lists natively
+            result = genai.embed_content(
+                model=self.model_name,
+                content=texts,
+                task_type="retrieval_document"
             )
-            return embeddings.tolist()
+            return result['embedding']
         except Exception as e:
             logger.error(f"Error embedding texts: {str(e)}")
             raise

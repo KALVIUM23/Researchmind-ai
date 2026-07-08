@@ -49,8 +49,8 @@ class Settings(BaseSettings):
     upload_directory: str = "uploads"
     
     # Embeddings
-    embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
-    embedding_dimension: int = 384
+    embedding_model: str = "models/embedding-001"
+    embedding_dimension: int = 768
     
     # Retrieval
     retrieval_top_k: int = 5
