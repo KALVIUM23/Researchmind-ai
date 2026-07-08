@@ -1,4 +1,4 @@
-﻿"""Vector Store Service - Phase 5 (Advanced Qdrant Integration)"""
+"""Vector Store Service - Phase 5 (Advanced Qdrant Integration)"""
 
 from qdrant_client import QdrantClient
 from qdrant_client.models import (
@@ -48,6 +48,9 @@ class VectorStoreService:
         try:
             if url == ":memory:":
                 self.client = QdrantClient(location=":memory:")
+            elif url.startswith("https"):
+                # Always explicitly use 443 for HTTPS to prevent qdrant-client from incorrectly defaulting to 6333
+                self.client = QdrantClient(url=url, port=443, api_key=api_key if api_key else None)
             else:
                 self.client = QdrantClient(url=url, api_key=api_key if api_key else None)
             self.collection_name = collection_name
