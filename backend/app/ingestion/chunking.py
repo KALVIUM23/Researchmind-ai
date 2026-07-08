@@ -1,7 +1,7 @@
 """Semantic Chunking Pipeline - Stage 2"""
 
 from typing import List, Dict, Any
-from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain.text_splitter import RecursiveCharacterTextSplitter
 import logging
 
 from backend.app.ingestion.chunk_management import (
