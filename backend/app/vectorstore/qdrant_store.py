@@ -81,13 +81,7 @@ class VectorStoreService:
                     vectors_config=VectorParams(
                         size=self.embedding_dim,
                         distance=Distance.COSINE
-                    ),
-                    # Optimize for performance
-                    optimizers_config={
-                        "default": {
-                            "enabled": True
-                        }
-                    },
+                    )
                 )
                 logger.info(f"[OK] Collection '{self.collection_name}' created successfully")
         except Exception as e:
