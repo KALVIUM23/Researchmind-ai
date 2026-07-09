@@ -3,8 +3,9 @@ Questions API Routes
 Handle document Q&A with streaming support
 """
 
-from fastapi import APIRouter, HTTPException, BackgroundTasks
+from fastapi import APIRouter, HTTPException, BackgroundTasks, Depends
 from fastapi.responses import StreamingResponse
+from backend.app.core.security import get_current_user
 import logging
 import json
 import time
@@ -15,7 +16,7 @@ router = APIRouter(prefix="/questions", tags=["questions"])
 logger = logging.getLogger(__name__)
 
 @router.post("/ask", response_class=StreamingResponse)
-async def ask_question(request: QuestionRequest):
+async def ask_question(request: QuestionRequest, current_user: dict = Depends(get_current_user)):
     """
     Ask a question about uploaded documents with streaming response
     """
@@ -30,7 +31,8 @@ async def ask_question(request: QuestionRequest):
         chunks = services.retrieval.retrieve_context(
             question=request.query,
             top_k=request.top_k,
-            document_id=request.document_id
+            document_id=request.document_id,
+            filters={"user_id": current_user["id"]}
         )
         retrieval_latency = time.time() - retrieval_start
         logger.info(f"Retrieval latency: {retrieval_latency:.2f}s")
@@ -89,7 +91,7 @@ async def ask_question(request: QuestionRequest):
 
 
 @router.post("/ask/simple", response_model=QuestionResponse)
-async def ask_question_simple(request: QuestionRequest):
+async def ask_question_simple(request: QuestionRequest, current_user: dict = Depends(get_current_user)):
     """
     Simple (non-streaming) version of ask endpoint
     """
@@ -103,7 +105,8 @@ async def ask_question_simple(request: QuestionRequest):
         chunks = services.retrieval.retrieve_context(
             question=request.query,
             top_k=request.top_k,
-            document_id=request.document_id
+            document_id=request.document_id,
+            filters={"user_id": current_user["id"]}
         )
         retrieval_latency = time.time() - retrieval_start
         logger.info(f"Retrieval latency: {retrieval_latency:.2f}s")

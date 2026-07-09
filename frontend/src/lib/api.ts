@@ -8,9 +8,14 @@ export interface Document {
 export const uploadDocument = async (file: File): Promise<{ document_id: string, message: string }> => {
   const formData = new FormData();
   formData.append("file", file);
+  
+  const token = localStorage.getItem("token");
 
   const response = await fetch(`${API_BASE_URL}/documents/upload`, {
     method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
     body: formData,
   });
 
@@ -22,10 +27,12 @@ export const uploadDocument = async (file: File): Promise<{ document_id: string,
 };
 
 export const generateSummary = async (document_id: string, length: string = "medium") => {
+  const token = localStorage.getItem("token");
   const response = await fetch(`${API_BASE_URL}/documents/summary`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({ document_id, length }),
   });
@@ -38,10 +45,12 @@ export const generateSummary = async (document_id: string, length: string = "med
 };
 
 export const generateResearchNotes = async (document_id: string, topic?: string) => {
+  const token = localStorage.getItem("token");
   const response = await fetch(`${API_BASE_URL}/documents/research-notes`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({ document_id, topic }),
   });

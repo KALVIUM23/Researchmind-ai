@@ -39,6 +39,7 @@ export const metadata: Metadata = {
 };
 
 import GlobalShell from "@/components/GlobalShell";
+import { AuthProvider } from "@/contexts/AuthContext";
 
 export default function RootLayout({
   children,
@@ -51,7 +52,9 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} ${ebGaramond.variable} ${hankenGrotesk.variable} ${jetbrainsMono.variable} ${libreCaslonText.variable} h-full antialiased dark`}
     >
       <body className="min-h-full flex flex-col bg-[#111316] text-[#e2e2e6]">
-        <GlobalShell>{children}</GlobalShell>
+        <AuthProvider>
+          <GlobalShell>{children}</GlobalShell>
+        </AuthProvider>
       </body>
     </html>
   );

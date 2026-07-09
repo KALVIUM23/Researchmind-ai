@@ -44,6 +44,10 @@ async def lifespan(app: FastAPI):
         from backend.app.services.citation_service import CitationService
         from backend.app.services.health_service import HealthService
         from backend.app.vectorstore.qdrant_store import VectorStoreService
+        from backend.app.core.database import connect_to_mongo, close_mongo_connection
+        
+        # Initialize MongoDB
+        await connect_to_mongo()
         
         # Initialize services in order
         logger.info("Initializing services pipeline...")
@@ -83,6 +87,8 @@ async def lifespan(app: FastAPI):
     
     # ===== SHUTDOWN =====
     logger.info("🛑 ResearchMind AI Shutting down...")
+    from backend.app.core.database import close_mongo_connection
+    await close_mongo_connection()
 
 
 def create_app() -> FastAPI:
@@ -124,8 +130,9 @@ def create_app() -> FastAPI:
         }
     
     # ===== API Routes (v1) =====
-    from backend.app.api import documents_api, questions_api
+    from backend.app.api import documents_api, questions_api, auth_api
     
+    app.include_router(auth_api.router, prefix="/api/v1/auth", tags=["auth"])
     app.include_router(documents_api.router, prefix="/api/v1", tags=["documents"])
     app.include_router(questions_api.router, prefix="/api/v1", tags=["questions"])
     

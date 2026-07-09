@@ -3,14 +3,18 @@
 import React, { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
-import { Search, MessageSquare, Terminal, Settings, LayoutDashboard, Database, Activity, FileText, HelpCircle } from "lucide-react";
+import { Search, MessageSquare, Terminal, Settings, LayoutDashboard, Database, Activity, FileText, HelpCircle, LogOut, User } from "lucide-react";
 import { Command } from "cmdk";
 import OnboardingTour from "./OnboardingTour";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function GlobalShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [cmdkOpen, setCmdkOpen] = useState(false);
+  const { user, logout } = useAuth();
+  
+  const isAuthPage = pathname.startsWith("/login") || pathname.startsWith("/register");
 
   // CMDK Keyboard shortcut
   useEffect(() => {
@@ -86,8 +90,9 @@ export default function GlobalShell({ children }: { children: React.ReactNode })
         </div>
       )}
 
-      {/* Top Nav Bar */}
-      <nav className="bg-[#111316] text-white font-jetbrains text-xs uppercase w-full border-b border-[#232629] flex justify-between items-center px-8 h-16 z-50 shrink-0 relative">
+      {/* Top Nav Bar - Hidden on Auth pages */}
+      {!isAuthPage && (
+        <nav className="bg-[#111316] text-white font-jetbrains text-xs uppercase w-full border-b border-[#232629] flex justify-between items-center px-8 h-16 z-50 shrink-0 relative">
         <div className="flex items-center gap-6">
           <Link href="/workspace" className="font-libre text-lg font-bold tracking-tighter text-white hover:opacity-80 transition-opacity">
             RESEARCH_MIND_AI
@@ -139,8 +144,26 @@ export default function GlobalShell({ children }: { children: React.ReactNode })
           >
             <HelpCircle className="h-4 w-4" />
           </button>
+          
+          {user && (
+            <>
+              <div className="w-px h-6 bg-[#232629] mx-2"></div>
+              <div className="flex items-center gap-2 text-[#8e9192] font-jetbrains text-[10px]">
+                <User className="h-3.5 w-3.5" />
+                <span className="truncate max-w-[120px]">{user.email}</span>
+              </div>
+              <button 
+                onClick={logout}
+                className="text-[#8e9192] hover:text-red-400 transition-colors p-2 ml-1"
+                title="Sign Out"
+              >
+                <LogOut className="h-4 w-4" />
+              </button>
+            </>
+          )}
         </div>
       </nav>
+      )}
 
       {/* Main Content Area */}
       {children}

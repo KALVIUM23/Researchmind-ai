@@ -18,6 +18,7 @@ from backend.app.schemas.document import (
 
 from fastapi.responses import StreamingResponse
 import json
+from backend.app.core.security import get_current_user
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 logger = logging.getLogger(__name__)
@@ -27,7 +28,7 @@ DOCUMENT_STATES = {}
 
 
 @router.post("/upload", response_model=UploadResponse)
-async def upload_document(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
+async def upload_document(background_tasks: BackgroundTasks, file: UploadFile = File(...), current_user: dict = Depends(get_current_user)):
     """
     Upload a PDF document for analysis
     """
@@ -53,7 +54,7 @@ async def upload_document(background_tasks: BackgroundTasks, file: UploadFile = 
         DOCUMENT_STATES[document_id] = "Processing"
         
         # Background task function
-        def process_document(doc_id: str, file_path: str, filename: str):
+        def process_document(doc_id: str, file_path: str, filename: str, user_id: str):
             try:
                 # 1. Parse PDF
                 is_valid, err = services.parser.validate_pdf(file_path)
@@ -72,6 +73,8 @@ async def upload_document(background_tasks: BackgroundTasks, file: UploadFile = 
                 embeddings = services.embeddings.embed_texts(chunk_texts)
                     
                 # 4. Vector Storage
+                for chunk in chunks:
+                    chunk["metadata"]["user_id"] = user_id
                 services.vector_store.add_chunks(chunks, embeddings)
                 DOCUMENT_STATES[doc_id] = "Ready"
                 logger.info(f"[OK] Document {doc_id} processed successfully in background")
@@ -79,7 +82,7 @@ async def upload_document(background_tasks: BackgroundTasks, file: UploadFile = 
                 logger.error(f"Background processing failed for {doc_id}: {e}")
                 DOCUMENT_STATES[doc_id] = f"Error: {str(e)}"
         
-        background_tasks.add_task(process_document, document_id, file_location, file.filename)
+        background_tasks.add_task(process_document, document_id, file_location, file.filename, current_user["id"])
         
         return {
             "status": "processing",
@@ -93,14 +96,14 @@ async def upload_document(background_tasks: BackgroundTasks, file: UploadFile = 
 
 
 @router.get("/status/{document_id}")
-async def get_document_status(document_id: str):
+async def get_document_status(document_id: str, current_user: dict = Depends(get_current_user)):
     if document_id not in DOCUMENT_STATES:
         raise HTTPException(status_code=404, detail="Document not found")
     return {"document_id": document_id, "status": DOCUMENT_STATES[document_id]}
 
 
 @router.post("/summary")
-async def generate_summary(request: DocumentSummaryRequest):
+async def generate_summary(request: DocumentSummaryRequest, current_user: dict = Depends(get_current_user)):
     """
     Generate a summary of the uploaded document
     """
@@ -112,7 +115,8 @@ async def generate_summary(request: DocumentSummaryRequest):
         chunks = services.retrieval.retrieve_context(
             question="summarize the document",
             top_k=20, 
-            document_id=request.document_id
+            document_id=request.document_id,
+            filters={"user_id": current_user["id"]}
         )
         
         if not chunks:
@@ -154,7 +158,7 @@ async def generate_summary(request: DocumentSummaryRequest):
 
 
 @router.post("/research-notes")
-async def generate_research_notes(request: ResearchNotesRequest):
+async def generate_research_notes(request: ResearchNotesRequest, current_user: dict = Depends(get_current_user)):
     """
     Generate detailed research notes for the document
     """
@@ -168,7 +172,8 @@ async def generate_research_notes(request: ResearchNotesRequest):
         chunks = services.retrieval.retrieve_context(
             question=query,
             top_k=15,
-            document_id=request.document_id
+            document_id=request.document_id,
+            filters={"user_id": current_user["id"]}
         )
         retrieval_latency = time.time() - retrieval_start
         logger.info(f"Retrieval latency for research notes: {retrieval_latency:.2f}s")
@@ -202,17 +207,17 @@ async def generate_research_notes(request: ResearchNotesRequest):
 
 
 @router.get("/")
-async def list_documents():
+async def list_documents(current_user: dict = Depends(get_current_user)):
     """Get list of uploaded documents"""
     # ... placeholder or real implementation ...
     return {"documents": [], "total": 0}
 
 @router.delete("/{document_id}")
-async def delete_document(document_id: str):
+async def delete_document(document_id: str, current_user: dict = Depends(get_current_user)):
     """Delete a document"""
     try:
         from backend.app.main import services
-        await services.vector_store.delete_by_metadata({"document_id": document_id})
+        await services.vector_store.delete_by_metadata({"document_id": document_id, "user_id": current_user["id"]})
         return {"status": "success", "message": f"Document {document_id} deleted"}
     except Exception as e:
         logger.error(f"Delete failed: {str(e)}", exc_info=True)
