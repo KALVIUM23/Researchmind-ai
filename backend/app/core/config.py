@@ -38,7 +38,7 @@ class Settings(BaseSettings):
     # Qdrant Vector Database
     qdrant_url: str = ":memory:"
     qdrant_api_key: str = ""
-    qdrant_collection_name: str = "researchmind"
+    qdrant_collection_name: str = "researchmind_v2"
     
     # Text Processing
     chunk_size: int = 1000
@@ -50,7 +50,7 @@ class Settings(BaseSettings):
     
     # Embeddings
     embedding_model: str = "models/gemini-embedding-2"
-    embedding_dimension: int = 768
+    embedding_dimension: int = 3072
     
     # Retrieval
     retrieval_top_k: int = 5

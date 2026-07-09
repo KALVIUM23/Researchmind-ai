@@ -35,7 +35,7 @@ class EmbeddingsService:
         try:
             logger.info(f"Loading Gemini embedding model: {model_name}")
             self.model_name = model_name
-            self.embedding_dim = 768  # models/text-embedding-004 has 768 dimensions
+            self.embedding_dim = 3072  # models/gemini-embedding-2 has 3072 dimensions
             
             if api_key:
                 genai.configure(api_key=api_key)
