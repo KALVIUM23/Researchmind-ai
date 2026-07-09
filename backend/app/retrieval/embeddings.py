@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 class EmbeddingsService:
     """Generate embeddings for text chunks using Google Gemini API"""
     
-    def __init__(self, model_name: str = "models/embedding-001", api_key: str = None):
+    def __init__(self, model_name: str = "models/text-embedding-004", api_key: str = None):
         """
         Initialize embeddings service
         
@@ -35,7 +35,7 @@ class EmbeddingsService:
         try:
             logger.info(f"Loading Gemini embedding model: {model_name}")
             self.model_name = model_name
-            self.embedding_dim = 768  # models/embedding-001 has 768 dimensions
+            self.embedding_dim = 768  # models/text-embedding-004 has 768 dimensions
             
             if api_key:
                 genai.configure(api_key=api_key)
