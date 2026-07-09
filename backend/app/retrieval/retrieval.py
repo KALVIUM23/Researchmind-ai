@@ -62,7 +62,7 @@ class RetrievalService:
         question: str, 
         top_k: int = 5,
         document_id: Optional[str] = None,
-        min_score: float = 0.0,
+        min_score: float = 0.5,
         ranking_strategy: RankingStrategy = RankingStrategy.SIMILARITY_ONLY
     ) -> List[Dict[str, Any]]:
         """
