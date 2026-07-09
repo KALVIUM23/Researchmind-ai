@@ -3,7 +3,7 @@ Documents API Routes
 Handle PDF upload, document management, summarization, and research notes
 """
 
-from fastapi import APIRouter, UploadFile, File, HTTPException, BackgroundTasks
+from fastapi import APIRouter, UploadFile, File, HTTPException, BackgroundTasks, Depends
 import logging
 import time
 import os
