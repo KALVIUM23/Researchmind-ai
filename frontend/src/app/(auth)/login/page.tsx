@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
+import { ArrowRight, Fingerprint, Sync, QrCode } from "lucide-react";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -47,58 +48,124 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex h-screen w-full items-center justify-center bg-[#111316]">
-      <div className="w-full max-w-md p-8 border border-[#3b3a3d] bg-[#1a1b1e]">
-        <div className="mb-8">
-          <h1 className="font-libre text-3xl text-white mb-2">Sign In</h1>
-          <p className="text-[#a1a1aa] text-sm">Enter your credentials to access the workspace.</p>
+    <div className="bg-[#111316] text-[#e2e2e6] min-h-screen flex flex-col font-geist overflow-hidden relative">
+      <main className="flex-grow flex items-center justify-center p-4 relative z-10 grid-bg-brutalist">
+        
+        {/* Registration Marks */}
+        <div className="absolute top-8 left-8 w-4 h-4 border-t border-l border-[#232629]"></div>
+        <div className="absolute top-8 right-8 w-4 h-4 border-t border-r border-[#232629]"></div>
+        <div className="absolute bottom-16 left-8 w-4 h-4 border-b border-l border-[#232629]"></div>
+        <div className="absolute bottom-16 right-8 w-4 h-4 border-b border-r border-[#232629]"></div>
+        
+        {/* Coordinate Stamps */}
+        <div className="absolute top-8 left-14 font-jetbrains text-[10px] tracking-[0.1em] text-[#8e9192] uppercase">
+          [X: 0.00, Y: 0.00]
+        </div>
+        <div className="absolute bottom-16 right-14 font-jetbrains text-[10px] tracking-[0.1em] text-[#8e9192] uppercase">
+          [SYS_READY]
         </div>
 
-        {error && (
-          <div className="mb-4 p-3 bg-red-900/30 border border-red-800 text-red-200 text-sm">
-            {error}
-          </div>
-        )}
+        <div className="w-full max-w-md bg-[#111316] border border-[#232629] p-6 relative shadow-2xl">
+          {/* Card Corner Accents */}
+          <div className="absolute top-0 left-0 w-2 h-2 bg-[#232629]"></div>
+          <div className="absolute top-0 right-0 w-2 h-2 bg-[#232629]"></div>
+          <div className="absolute bottom-0 left-0 w-2 h-2 bg-[#232629]"></div>
+          <div className="absolute bottom-0 right-0 w-2 h-2 bg-[#232629]"></div>
 
-        <form onSubmit={handleLogin} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-white mb-1">Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="w-full bg-[#111316] border border-[#3b3a3d] p-2.5 text-white focus:outline-none focus:border-white transition-colors"
-            />
+          <div className="text-center mb-8 border-b border-[#232629] pb-4">
+            <h1 className="font-garamond text-[32px] md:text-[48px] tracking-tighter text-white uppercase font-semibold leading-[1.1]">Authentication Terminal</h1>
+            <p className="font-jetbrains text-[12px] text-[#c4c7c8] mt-2 uppercase tracking-wider">Protocol_01: Identity_Verification</p>
           </div>
+
+          {/* System Calibration Sequence */}
+          <div className="h-24 w-full border border-[#232629] mb-8 relative overflow-hidden bg-[#0c0e11]">
+            <div className="absolute inset-0 flex items-center justify-center text-[#444748] font-jetbrains text-[10px] tracking-widest opacity-50">
+              <Sync className="w-4 h-4 mr-2 animate-spin" /> CALIBRATING...
+            </div>
+            
+            {error && (
+              <div className="absolute inset-0 flex items-center justify-center bg-red-900/30 text-red-200 text-xs font-jetbrains font-bold uppercase backdrop-blur-sm z-10">
+                ERR: {error}
+              </div>
+            )}
+          </div>
+
+          <form onSubmit={handleLogin} className="space-y-6">
+            <div>
+              <label className="flex items-center font-jetbrains text-[10px] tracking-[0.1em] text-[#c4c7c8] mb-2 uppercase" htmlFor="operative_id">
+                <span className="w-4 h-4 mr-2 text-white/50 border border-white/20 rounded-full flex items-center justify-center text-[8px] font-bold">@</span>
+                REF_OPERATIVE_ID (EMAIL)
+              </label>
+              <input 
+                className="input-bracket w-full px-4 py-3 font-jetbrains text-[13px] text-white transition-all duration-200 placeholder-[#333538]" 
+                id="operative_id" 
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="OP-XXXX-XXXX" 
+                required 
+                type="email"
+              />
+            </div>
+
+            <div>
+              <label className="flex items-center font-jetbrains text-[10px] tracking-[0.1em] text-[#c4c7c8] mb-2 uppercase" htmlFor="access_token">
+                <span className="w-4 h-4 mr-2 text-white/50 border border-white/20 flex items-center justify-center text-[8px] font-bold">#</span>
+                SEC_ACCESS_TOKEN (PASSWORD)
+              </label>
+              <input 
+                className="input-bracket w-full px-4 py-3 font-jetbrains text-[13px] text-white transition-all duration-200 placeholder-[#333538]" 
+                id="access_token" 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••••••" 
+                required 
+                type="password"
+              />
+            </div>
+
+            <div className="flex justify-between items-center font-jetbrains text-[10px] tracking-[0.1em] text-[#c4c7c8] uppercase">
+              <span className="flex items-center">
+                <div className="w-2 h-2 rounded-full bg-[#E4F222] mr-2 animate-pulse"></div> 
+                UPLINK READY
+              </span>
+              <span className="font-jetbrains text-[13px] text-[#444748]">
+                {isLoading ? "T-MINUS 00:00:01" : "T-MINUS 00:00:00"}
+              </span>
+            </div>
+
+            <button 
+              disabled={isLoading}
+              className="w-full bg-white text-[#1a1c1e] font-garamond text-[24px] font-semibold py-3 hover:bg-[#333538] hover:text-white transition-colors border border-white uppercase tracking-wider flex items-center justify-center group disabled:opacity-50" 
+              type="submit"
+            >
+              {isLoading ? "VERIFYING..." : "INITIATE LOGIN"} 
+              {!isLoading && <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />}
+            </button>
+          </form>
           
-          <div>
-            <label className="block text-sm font-medium text-white mb-1">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="w-full bg-[#111316] border border-[#3b3a3d] p-2.5 text-white focus:outline-none focus:border-white transition-colors"
-            />
+          <div className="mt-4 pt-4 text-center font-jetbrains text-[10px] tracking-[0.1em] text-[#8e9192] uppercase cursor-pointer hover:text-white transition-colors" onClick={() => router.push("/register")}>
+            [ NEW OPERATIVE? REGISTER HERE ]
           </div>
 
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full bg-white text-black font-medium p-2.5 mt-4 hover:bg-gray-200 transition-colors disabled:opacity-50"
-          >
-            {isLoading ? "Signing in..." : "Sign In"}
-          </button>
-        </form>
-
-        <div className="mt-6 text-center text-sm text-[#a1a1aa]">
-          Don't have an account?{" "}
-          <button onClick={() => router.push("/register")} className="text-white hover:underline">
-            Register here
-          </button>
+          <div className="mt-6 pt-4 border-t border-[#232629] flex justify-between items-center font-jetbrains text-[10px] tracking-[0.1em] text-[#444748]">
+            <span>V.1.0.4 [STABLE]</span>
+            <QrCode className="w-4 h-4" />
+          </div>
         </div>
-      </div>
+      </main>
+
+      {/* Footer */}
+      <footer className="bg-[#111316] w-full flex justify-between items-center px-8 py-2 z-50 border-t border-[#232629]">
+        <div className="font-jetbrains text-[12px] text-white flex items-center gap-4">
+          <Fingerprint className="w-4 h-4" />
+          <span>SYS_REF: 2026.Q2 // ALL RIGHTS RESERVED</span>
+        </div>
+        <div className="hidden md:flex gap-6">
+          <span className="font-jetbrains text-[10px] tracking-[0.1em] text-[#c4c7c8] uppercase">STATUS: OPERATIONAL</span>
+          <span className="font-jetbrains text-[10px] tracking-[0.1em] text-[#c4c7c8] uppercase">ENCRYPTION: AES-256</span>
+          <span className="font-jetbrains text-[10px] tracking-[0.1em] text-[#c4c7c8] uppercase">CORE_ID: RM-882</span>
+        </div>
+      </footer>
     </div>
   );
 }
