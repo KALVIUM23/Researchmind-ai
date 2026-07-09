@@ -64,8 +64,8 @@ async def lifespan(app: FastAPI):
         services.vector_store = VectorStoreService(
             url=settings.qdrant_url,
             api_key=settings.qdrant_api_key,
-            collection_name=settings.qdrant_collection_name,
-            embedding_dim=settings.embedding_dimension
+            collection_name="researchmind_v2",
+            embedding_dim=3072
         )
         services.retrieval = RetrievalService(
             vector_store=services.vector_store,
