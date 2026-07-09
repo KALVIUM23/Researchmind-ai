@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
-import { ArrowRight, Fingerprint, Sync, QrCode } from "lucide-react";
+import { ArrowRight, Fingerprint, RefreshCw, QrCode } from "lucide-react";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -80,7 +80,7 @@ export default function LoginPage() {
           {/* System Calibration Sequence */}
           <div className="h-24 w-full border border-[#232629] mb-8 relative overflow-hidden bg-[#0c0e11]">
             <div className="absolute inset-0 flex items-center justify-center text-[#444748] font-jetbrains text-[10px] tracking-widest opacity-50">
-              <Sync className="w-4 h-4 mr-2 animate-spin" /> CALIBRATING...
+              <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> CALIBRATING...
             </div>
             
             {error && (
