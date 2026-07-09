@@ -199,6 +199,8 @@ async def generate_research_notes(request: ResearchNotesRequest, current_user: d
             "confidence": confidence
         }
 
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Research notes generation failed: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to generate research notes: {str(e)}")
