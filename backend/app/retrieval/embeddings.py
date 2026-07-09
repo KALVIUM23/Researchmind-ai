@@ -62,8 +62,7 @@ class EmbeddingsService:
         try:
             result = genai.embed_content(
                 model=self.model_name,
-                content=text,
-                task_type="retrieval_document"
+                content=text
             )
             return result['embedding']
         except Exception as e:
@@ -85,8 +84,7 @@ class EmbeddingsService:
             # The Gemini API handles lists natively
             result = genai.embed_content(
                 model=self.model_name,
-                content=texts,
-                task_type="retrieval_document"
+                content=texts
             )
             return result['embedding']
         except Exception as e:

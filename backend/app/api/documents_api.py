@@ -115,8 +115,7 @@ async def generate_summary(request: DocumentSummaryRequest, current_user: dict =
         chunks = services.retrieval.retrieve_context(
             question="summarize the document",
             top_k=20, 
-            document_id=request.document_id,
-            filters={"user_id": current_user["id"]}
+            document_id=request.document_id
         )
         
         if not chunks:
@@ -172,8 +171,7 @@ async def generate_research_notes(request: ResearchNotesRequest, current_user: d
         chunks = services.retrieval.retrieve_context(
             question=query,
             top_k=15,
-            document_id=request.document_id,
-            filters={"user_id": current_user["id"]}
+            document_id=request.document_id
         )
         retrieval_latency = time.time() - retrieval_start
         logger.info(f"Retrieval latency for research notes: {retrieval_latency:.2f}s")

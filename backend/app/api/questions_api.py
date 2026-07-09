@@ -31,8 +31,7 @@ async def ask_question(request: QuestionRequest, current_user: dict = Depends(ge
         chunks = services.retrieval.retrieve_context(
             question=request.query,
             top_k=request.top_k,
-            document_id=request.document_id,
-            filters={"user_id": current_user["id"]}
+            document_id=request.document_id
         )
         retrieval_latency = time.time() - retrieval_start
         logger.info(f"Retrieval latency: {retrieval_latency:.2f}s")
@@ -105,8 +104,7 @@ async def ask_question_simple(request: QuestionRequest, current_user: dict = Dep
         chunks = services.retrieval.retrieve_context(
             question=request.query,
             top_k=request.top_k,
-            document_id=request.document_id,
-            filters={"user_id": current_user["id"]}
+            document_id=request.document_id
         )
         retrieval_latency = time.time() - retrieval_start
         logger.info(f"Retrieval latency: {retrieval_latency:.2f}s")

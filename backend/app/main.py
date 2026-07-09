@@ -161,3 +161,14 @@ if __name__ == "__main__":
         reload=settings.debug,
         log_level="info"
     )
+
+@app.get("/api/v1/test_models")
+async def test_models():
+    import google.generativeai as genai
+    from backend.app.core.config import settings
+    genai.configure(api_key=settings.gemini_api_key)
+    try:
+        models = [m.name for m in genai.list_models()]
+        return {"models": models}
+    except Exception as e:
+        return {"error": str(e)}
