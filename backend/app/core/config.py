@@ -49,7 +49,7 @@ class Settings(BaseSettings):
     upload_directory: str = "uploads"
     
     # Embeddings
-    embedding_model: str = "models/text-embedding-004"
+    embedding_model: str = "models/gemini-embedding-2"
     embedding_dimension: int = 768
     
     # Retrieval
