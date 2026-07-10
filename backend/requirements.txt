@@ -7,8 +7,6 @@ pydantic-settings==2.1.0
 # PDF Processing
 PyPDF2==3.0.1
 pypdf
-unstructured
-pymupdf
 
 # LLM & AI
 langchain>=0.1.1
