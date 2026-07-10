@@ -130,7 +130,7 @@ class RetrievalService:
             
         except Exception as e:
             logger.error(f"Error retrieving context: {str(e)}")
-            return []
+            raise
     
     def _deduplicate_chunks(self, chunks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Remove duplicate chunks based on text similarity"""
