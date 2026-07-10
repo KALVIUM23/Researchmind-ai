@@ -205,15 +205,14 @@ class VectorStoreService:
             List of retrieved chunks with scores and metadata
         """
         try:
-            response = self.client.query_points(
+            results = self.client.search(
                 collection_name=self.collection_name,
-                query=query_embedding,
+                query_vector=query_embedding,
                 limit=top_k,
                 score_threshold=score_threshold,
                 with_payload=True,
                 with_vectors=False,  # Don't retrieve vectors to save bandwidth
             )
-            results = response.points
             
             retrieved = []
             for result in results:
@@ -274,16 +273,15 @@ class VectorStoreService:
             
             filter_obj = Filter(must=conditions) if conditions else None
             
-            response = self.client.query_points(
+            results = self.client.search(
                 collection_name=self.collection_name,
-                query=query_embedding,
+                query_vector=query_embedding,
                 query_filter=filter_obj,
                 limit=top_k,
                 score_threshold=score_threshold,
                 with_payload=True,
                 with_vectors=False,
             )
-            results = response.points
             
             retrieved = []
             for result in results:
