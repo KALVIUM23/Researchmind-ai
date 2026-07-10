@@ -30,7 +30,7 @@ async def lifespan(app: FastAPI):
     """Manage app lifecycle: startup and shutdown"""
     
     # ===== STARTUP =====
-    logger.info("🚀 ResearchMind AI Starting...")
+    logger.info("ResearchMind AI Starting...")
     try:
         settings = get_settings()
         logger.info(f"Environment: {settings.environment}")

@@ -6,15 +6,15 @@ pydantic-settings==2.1.0
 
 # PDF Processing
 PyPDF2==3.0.1
-pypdf==3.17.1
-unstructured==0.12.4
-pymupdf==1.23.8
+pypdf
+unstructured
+pymupdf
 
 # LLM & AI
 langchain>=0.1.1
 langchain-community>=0.0.13
-langchain-google-genai>=0.0.11
-google-generativeai>=0.7.2
+langchain-google-genai
+google-generativeai
 
 qdrant-client==1.8.0
 
